@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<title>Recaudación Aduanera de México · ANAM 2018–2025</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --guinda:   #611232;
+    --verde:    #002F2A;
+    --arena:    #C8A977;
+    --gris-c:   #F5F3EF;
+    --gris-o:   #3B3B3B;
+    --blanco:   #FFFFFF;
+    --guinda-l: #8B1A47;
+    --verde-l:  #1A4F4A;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Montserrat',sans-serif; background:#1a1a1a; }
+
+  /* ── Navigation ── */
+  #nav {
+    position:fixed; top:0; left:50%; transform:translateX(-50%);
+    z-index:999; display:flex; align-items:center; gap:12px;
+    background:rgba(0,0,0,.7); backdrop-filter:blur(8px);
+    padding:8px 20px; border-radius:0 0 12px 12px;
+  }
+  #nav button {
+    background:none; border:1px solid rgba(255,255,255,.3); color:#fff;
+    padding:4px 14px; border-radius:20px; cursor:pointer; font-size:13px;
+    font-family:'Montserrat',sans-serif; transition:.2s;
+  }
+  #nav button:hover { background:rgba(255,255,255,.15); }
+  #slide-counter { color:rgba(255,255,255,.7); font-size:12px; min-width:60px; text-align:center; }
+
+  /* ── Slide wrapper ── */
+  .slides-container { display:flex; flex-direction:column; align-items:center; gap:20px; padding:60px 20px 40px; }
+
+  .slide {
+    width:1280px; height:720px; position:relative; overflow:hidden;
+    border-radius:4px; box-shadow:0 8px 40px rgba(0,0,0,.5);
+    flex-shrink:0;
+  }
+
+  /* ── SLIDE 1 · PORTADA ── */
+  .s1 { background:var(--verde); }
+  .s1 .bg-accent {
+    position:absolute; right:-80px; top:-80px;
+    width:520px; height:520px; border-radius:50%;
+    background:radial-gradient(circle, rgba(97,18,50,.6) 0%, transparent 70%);
+  }
+  .s1 .stripe {
+    position:absolute; bottom:0; left:0; right:0; height:6px;
+    background:linear-gradient(90deg, var(--arena) 0%, var(--guinda) 40%, var(--verde-l) 100%);
+  }
+  .s1 .content {
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    justify-content:center; padding:70px 90px;
+  }
+  .s1 .eyebrow {
+    font-size:11px; font-weight:600; letter-spacing:3px; text-transform:uppercase;
+    color:var(--arena); margin-bottom:18px;
+  }
+  .s1 h1 {
+    font-size:52px; font-weight:800; color:var(--blanco); line-height:1.1;
+    margin-bottom:20px;
+  }
+  .s1 h1 span { color:var(--arena); }
+  .s1 .subtitle {
+    font-size:18px; font-weight:300; color:rgba(255,255,255,.75);
+    margin-bottom:8px;
+  }
+  .s1 .period {
+    font-size:14px; font-weight:500; color:var(--arena);
+    border:1px solid rgba(200,169,119,.4); display:inline-block;
+    padding:4px 14px; border-radius:20px; margin-top:8px;
+  }
+  .s1 .logos-bar {
+    position:absolute; bottom:40px; left:0; right:0;
+    display:flex; align-items:center; justify-content:flex-end;
+    padding:0 90px; gap:32px;
+  }
+  .s1 .logos-bar img { height:44px; object-fit:contain; filter:brightness(0) invert(1) opacity(.85); }
+  .s1 .logos-bar .sep { width:1px; height:32px; background:rgba(255,255,255,.25); }
+  .s1 .vertical-line {
+    position:absolute; left:520px; top:60px; bottom:60px;
+    width:2px; background:linear-gradient(to bottom, transparent, var(--arena) 30%, var(--arena) 70%, transparent);
+  }
+  .s1 .right-info {
+    position:absolute; right:90px; top:50%; transform:translateY(-50%);
+    width:280px; display:flex; flex-direction:column; gap:24px;
+  }
+  .s1 .stat-box {
+    border-left:3px solid var(--arena); padding-left:16px;
+  }
+  .s1 .stat-box .num { font-size:28px; font-weight:700; color:var(--blanco); }
+  .s1 .stat-box .lbl { font-size:11px; color:rgba(255,255,255,.6); margin-top:2px; text-transform:uppercase; letter-spacing:1px; }
+
+  /* ── SLIDE 2 · INFO INSTITUCIONAL ── */
+  .s2 { background:var(--gris-c); }
+  .s2 .header {
+    background:var(--verde); height:90px; display:flex; align-items:center; padding:0 70px;
+    position:relative;
+  }
+  .s2 .header h2 { font-size:22px; font-weight:700; color:var(--blanco); }
+  .s2 .header .number {
+    position:absolute; right:70px; font-size:80px; font-weight:800;
+    color:rgba(255,255,255,.08); line-height:1;
+  }
+  .s2 .header .accent-line {
+    position:absolute; bottom:0; left:0; right:0; height:4px;
+    background:linear-gradient(90deg, var(--arena), var(--guinda));
+  }
+  .s2 .body { display:flex; gap:0; height:630px; }
+  .s2 .col { flex:1; padding:36px 44px; border-right:1px solid rgba(0,0,0,.08); }
+  .s2 .col:last-child { border-right:none; }
+  .s2 .col-icon {
+    width:42px; height:42px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:16px; font-size:20px;
+  }
+  .s2 .col h3 { font-size:14px; font-weight:700; color:var(--guinda); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; }
+  .s2 .col p { font-size:13px; line-height:1.75; color:var(--gris-o); }
+  .s2 .impuesto {
+    margin-top:18px; padding:12px 14px; border-radius:8px;
+    background:rgba(97,18,50,.06); border-left:3px solid var(--guinda);
+  }
+  .s2 .impuesto strong { font-size:12px; font-weight:700; color:var(--guinda); display:block; margin-bottom:4px; }
+  .s2 .impuesto span { font-size:12px; color:var(--gris-o); line-height:1.5; }
+  .s2 .col-accent { background:var(--verde); }
+  .s2 .col-accent h3 { color:var(--arena); }
+  .s2 .col-accent p { color:rgba(255,255,255,.8); }
+  .s2 .col-accent .impuesto { background:rgba(200,169,119,.1); border-left-color:var(--arena); }
+  .s2 .col-accent .impuesto strong { color:var(--arena); }
+  .s2 .col-accent .impuesto span { color:rgba(255,255,255,.7); }
+
+  /* ── SLIDE 3 · RESUMEN EJECUTIVO ── */
+  .s3 { background:var(--blanco); }
+  .s3 .header { background:var(--guinda); height:80px; display:flex; align-items:center; padding:0 60px; position:relative; }
+  .s3 .header h2 { font-size:20px; font-weight:700; color:var(--blanco); }
+  .s3 .header .tag {
+    margin-left:auto; background:rgba(255,255,255,.15); color:var(--blanco);
+    font-size:11px; padding:4px 12px; border-radius:20px; font-weight:500;
+  }
+  .s3 .header .accent-line { position:absolute; bottom:0; left:0; right:0; height:4px; background:linear-gradient(90deg,var(--arena),transparent); }
+  .s3 .body { display:flex; height:640px; }
+  .s3 .left { width:380px; padding:28px 36px; display:flex; flex-direction:column; gap:14px; background:var(--gris-c); }
+  .s3 .kpi {
+    background:var(--blanco); border-radius:10px; padding:18px 20px;
+    border-left:4px solid var(--guinda); box-shadow:0 2px 8px rgba(0,0,0,.06);
+  }
+  .s3 .kpi.verde { border-left-color:var(--verde); }
+  .s3 .kpi.arena { border-left-color:var(--arena); }
+  .s3 .kpi.gris  { border-left-color:#888; }
+  .s3 .kpi .val { font-size:26px; font-weight:800; color:var(--gris-o); }
+  .s3 .kpi .lbl { font-size:11px; color:#888; margin-top:3px; text-transform:uppercase; letter-spacing:.8px; }
+  .s3 .kpi .sub { font-size:12px; color:var(--gris-o); margin-top:4px; }
+  .s3 .right { flex:1; padding:28px 40px; display:flex; flex-direction:column; }
+  .s3 .right h4 { font-size:13px; font-weight:600; color:var(--gris-o); margin-bottom:16px; text-transform:uppercase; letter-spacing:.8px; }
+  .s3 .right .chart-wrap { flex:1; position:relative; }
+
+  /* ── SLIDE 4 · ANÁLISIS DE IMPUESTOS ── */
+  .s4 { background:var(--blanco); }
+  .s4 .header { background:var(--verde); height:80px; display:flex; align-items:center; padding:0 60px; position:relative; }
+  .s4 .header h2 { font-size:20px; font-weight:700; color:var(--blanco); }
+  .s4 .header .accent-line { position:absolute; bottom:0; left:0; right:0; height:4px; background:linear-gradient(90deg,var(--arena),transparent); }
+  .s4 .body { display:flex; height:640px; }
+  .s4 .chart-area { flex:1; padding:24px 40px 20px; display:flex; flex-direction:column; }
+  .s4 .chart-area h4 { font-size:12px; font-weight:600; color:#999; margin-bottom:12px; text-transform:uppercase; letter-spacing:.8px; }
+  .s4 .chart-wrap { flex:1; position:relative; }
+  .s4 .pct-table { width:340px; background:var(--gris-c); padding:20px 28px; overflow:auto; }
+  .s4 .pct-table h4 { font-size:11px; font-weight:700; color:var(--verde); text-transform:uppercase; letter-spacing:1px; margin-bottom:14px; }
+  .s4 table { width:100%; border-collapse:collapse; font-size:11px; }
+  .s4 th { padding:6px 8px; text-align:right; color:var(--guinda); font-weight:700; border-bottom:2px solid var(--guinda); }
+  .s4 th:first-child { text-align:left; }
+  .s4 td { padding:5px 8px; text-align:right; color:var(--gris-o); border-bottom:1px solid rgba(0,0,0,.06); }
+  .s4 td:first-child { text-align:left; font-weight:600; color:var(--verde); }
+  .s4 tr:hover td { background:rgba(97,18,50,.04); }
+
+  /* ── SLIDE 5 · INFORMACIÓN ESPACIAL ── */
+  .s5 { background:var(--blanco); }
+  .s5 .header { background:var(--guinda); height:80px; display:flex; align-items:center; padding:0 60px; position:relative; }
+  .s5 .header h2 { font-size:20px; font-weight:700; color:var(--blanco); }
+  .s5 .header .accent-line { position:absolute; bottom:0; left:0; right:0; height:4px; background:linear-gradient(90deg,var(--arena),transparent); }
+  .s5 .body { display:flex; height:640px; }
+  .s5 .bars-area { flex:1; padding:20px 36px 20px; display:flex; flex-direction:column; }
+  .s5 .bars-area h4 { font-size:11px; font-weight:700; color:#999; text-transform:uppercase; letter-spacing:.8px; margin-bottom:12px; }
+  .s5 .chart-wrap { flex:1; position:relative; }
+  .s5 .right-panel { width:300px; background:var(--gris-c); padding:20px 24px; display:flex; flex-direction:column; gap:16px; }
+  .s5 .donut-title { font-size:11px; font-weight:700; color:var(--verde); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
+  .s5 .donut-wrap { height:180px; position:relative; }
+  .s5 .type-legend { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+  .s5 .type-row { display:flex; align-items:center; gap:10px; }
+  .s5 .type-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .s5 .type-info { flex:1; }
+  .s5 .type-name { font-size:11px; font-weight:600; color:var(--gris-o); }
+  .s5 .type-val { font-size:10px; color:#888; }
+
+  /* ── SLIDE 6 · SLIDE LIBRE ── */
+  .s6 { background:var(--gris-c); }
+  .s6 .header { background:linear-gradient(135deg,var(--guinda),#8B1A47); height:80px; display:flex; align-items:center; padding:0 60px; position:relative; }
+  .s6 .header h2 { font-size:20px; font-weight:700; color:var(--blanco); }
+  .s6 .header .accent-line { position:absolute; bottom:0; left:0; right:0; height:4px; background:linear-gradient(90deg,var(--arena),transparent); }
+  .s6 .body { display:flex; height:640px; }
+  .s6 .left { width:460px; padding:28px 40px; display:flex; flex-direction:column; gap:16px; }
+  .s6 .insight-card {
+    background:var(--blanco); border-radius:10px; padding:18px 20px;
+    box-shadow:0 2px 10px rgba(0,0,0,.08);
+  }
+  .s6 .insight-card .badge {
+    display:inline-block; font-size:10px; font-weight:700; letter-spacing:1px;
+    text-transform:uppercase; padding:3px 10px; border-radius:20px; margin-bottom:10px;
+  }
+  .s6 .insight-card .badge.covid { background:#FDE68A; color:#92400E; }
+  .s6 .insight-card .badge.ieps  { background:#FEE2E2; color:#991B1B; }
+  .s6 .insight-card .badge.trend { background:#D1FAE5; color:#065F46; }
+  .s6 .insight-card h4 { font-size:13px; font-weight:700; color:var(--gris-o); margin-bottom:6px; }
+  .s6 .insight-card p  { font-size:12px; color:#666; line-height:1.6; }
+  .s6 .insight-card .big { font-size:28px; font-weight:800; color:var(--guinda); }
+  .s6 .right { flex:1; padding:20px 36px; display:flex; flex-direction:column; }
+  .s6 .right h4 { font-size:12px; font-weight:600; color:#999; margin-bottom:8px; text-transform:uppercase; letter-spacing:.8px; }
+  .s6 .chart-wrap { flex:1; position:relative; }
+
+  /* ── Slide number badge ── */
+  .slide-num {
+    position:absolute; bottom:18px; right:24px;
+    font-size:11px; color:rgba(255,255,255,.4); font-weight:500;
+  }
+  .slide-num.dark { color:rgba(0,0,0,.25); }
+
+  /* ── Print ── */
+  @media print {
+    body { background:white; }
+    #nav { display:none; }
+    .slides-container { padding:0; gap:0; }
+    .slide { page-break-after:always; border-radius:0; box-shadow:none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<div id="nav">
+  <button onclick="prevSlide()">← Ant</button>
+  <span id="slide-counter">1 / 6</span>
+  <button onclick="nextSlide()">Sig →</button>
+  <button onclick="window.print()" style="margin-left:8px; border-color:rgba(200,169,119,.5); color:#C8A977;">⬇ PDF</button>
+</div>
+
+<div class="slides-container" id="slides">
+
+<!-- ══════════════ SLIDE 1 · PORTADA ══════════════ -->
+<div class="slide s1" id="slide-1">
+  <div class="bg-accent"></div>
+  <div class="content">
+    <p class="eyebrow">Agencia Nacional de Aduanas de México</p>
+    <h1>Recaudación<br>Aduanera<br>de <span>México</span></h1>
+    <p class="subtitle">Análisis Estadístico Institucional</p>
+    <span class="period">Periodo 2018 – 2025*</span>
+  </div>
+  <div class="vertical-line"></div>
+  <div class="right-info">
+    <div class="stat-box">
+      <div class="num">$8.8 B</div>
+      <div class="lbl">MXN Recaudado (acumulado)</div>
+    </div>
+    <div class="stat-box">
+      <div class="num">51 Aduanas</div>
+      <div class="lbl">Puntos de recaudación activos</div>
+    </div>
+    <div class="stat-box">
+      <div class="num">+49.5%</div>
+      <div class="lbl">Crecimiento 2018 → 2025</div>
+    </div>
+    <div class="stat-box">
+      <div class="num">IVA · 73%</div>
+      <div class="lbl">Impuesto dominante (promedio)</div>
+    </div>
+  </div>
+  <div class="stripe"></div>
+  <div class="logos-bar">
+    <img src="Logos/Logos/SHCP_Logo.png" alt="SHCP">
+    <div class="sep"></div>
+    <img src="Logos/Logos/Logo_Agencia_Nacional_de_Aduanas.png" alt="ANAM" style="height:48px;">
+    <div class="sep"></div>
+    <img src="Logos/Logos/Logo_del_Gobierno_de_México.png" alt="Gobierno de México">
+  </div>
+  <span class="slide-num">01 / 06</span>
+</div>
+
+<!-- ══════════════ SLIDE 2 · INFORMACIÓN INSTITUCIONAL ══════════════ -->
+<div class="slide s2" id="slide-2">
+  <div class="header">
+    <h2>Información Institucional</h2>
+    <span class="number">02</span>
+    <div class="accent-line"></div>
+  </div>
+  <div class="body">
+    <!-- Col 1 -->
+    <div class="col">
+      <div class="col-icon" style="background:rgba(97,18,50,.1);">🏛</div>
+      <h3>¿Qué es la ANAM?</h3>
+      <p>La <strong>Agencia Nacional de Aduanas de México (ANAM)</strong> es un órgano desconcentrado de la Secretaría de Hacienda y Crédito Público (SHCP), creado para administrar, supervisar y controlar la entrada y salida de mercancías del territorio nacional.</p>
+      <p style="margin-top:12px;">Su misión es garantizar el cumplimiento de la legislación aduanera, facilitar el comercio legítimo y proteger la seguridad nacional y económica del país.</p>
+      <div class="impuesto" style="margin-top:16px; background:rgba(97,18,50,.05);">
+        <strong>Ámbito de actuación</strong>
+        <span>Recaudación · Comercio exterior · Pedimentos · Importaciones y exportaciones · Comportamiento operativo de aduanas</span>
+      </div>
+    </div>
+    <!-- Col 2 -->
+    <div class="col">
+      <div class="col-icon" style="background:rgba(0,47,42,.1);">📊</div>
+      <h3>¿Qué es la Recaudación Aduanera?</h3>
+      <p>Es el conjunto de <strong>impuestos, cuotas y derechos</strong> cobrados en las aduanas de México por el tránsito de mercancías. Representa una fuente clave de ingresos tributarios del Estado mexicano.</p>
+      <p style="margin-top:12px;">La información estadística considera únicamente el <strong>flujo de efectivo</strong>, excluyendo formas de pago virtuales y certificados especiales.</p>
+      <div class="impuesto">
+        <strong>Nota metodológica (DTA desde 2023)</strong>
+        <span>A partir del 1 de enero de 2023, el DTA integra el 100% del monto (antes solo el 8% remanente del fideicomiso del Art. 16 de la Ley Aduanera).</span>
+      </div>
+    </div>
+    <!-- Col 3 (dark) -->
+    <div class="col col-accent">
+      <div class="col-icon" style="background:rgba(200,169,119,.2);">⚖️</div>
+      <h3>Impuestos Aduaneros</h3>
+      <div class="impuesto">
+        <strong>IVA — Impuesto al Valor Agregado</strong>
+        <span>Grava la importación de bienes. Es el impuesto de mayor participación en la recaudación (67–84% del total).</span>
+      </div>
+      <div class="impuesto">
+        <strong>IGI — Impuesto General de Importación</strong>
+        <span>Arancel aplicado sobre el valor en aduana de los bienes importados, también llamado arancel ad valorem.</span>
+      </div>
+      <div class="impuesto">
+        <strong>IEPS — Impuesto Especial sobre Producción y Servicios</strong>
+        <span>Aplicable a combustibles, alcohol, tabaco y otros bienes específicos. Alta variabilidad histórica.</span>
+      </div>
+      <div class="impuesto">
+        <strong>DTA · ISAN · Otros</strong>
+        <span>Derecho de Trámite Aduanero, Impuesto sobre Automóviles Nuevos, multas, recargos y autodeclaraciones.</span>
+      </div>
+    </div>
+  </div>
+  <span class="slide-num dark">02 / 06</span>
+</div>
+
+<!-- ══════════════ SLIDE 3 · RESUMEN EJECUTIVO ══════════════ -->
+<div class="slide s3" id="slide-3">
+  <div class="header">
+    <h2>Resumen Ejecutivo</h2>
+    <span class="tag">Millones de pesos · 2018–2025*</span>
+    <div class="accent-line"></div>
+  </div>
+  <div class="body">
+    <div class="left">
+      <div class="kpi">
+        <div class="val">$8,796,631 M</div>
+        <div class="lbl">Recaudación total acumulada (2018–2025)</div>
+        <div class="sub">Equivalente a ~$8.8 billones MXN</div>
+      </div>
+      <div class="kpi verde">
+        <div class="val">$1,449,461 M</div>
+        <div class="lbl">Mejor año: 2025 (cifras preliminares)</div>
+        <div class="sub">+19.9% vs 2024 · Record histórico</div>
+      </div>
+      <div class="kpi arena">
+        <div class="val">IVA · 73%</div>
+        <div class="lbl">Impuesto de mayor participación</div>
+        <div class="sub">Rango histórico: 67%–84% del total anual</div>
+      </div>
+      <div class="kpi gris">
+        <div class="val">+49.5%</div>
+        <div class="lbl">Crecimiento nominal 2018→2025</div>
+        <div class="sub">2020 fue el único año con caída (COVID-19)</div>
+      </div>
+    </div>
+    <div class="right">
+      <h4>Recaudación Total Anual — Millones de Pesos MXN</h4>
+      <div class="chart-wrap">
+        <canvas id="chartResumen"></canvas>
+      </div>
+    </div>
+  </div>
+  <span class="slide-num dark">03 / 06</span>
+</div>
+
+<!-- ══════════════ SLIDE 4 · ANÁLISIS DE IMPUESTOS ══════════════ -->
+<div class="slide s4" id="slide-4">
+  <div class="header">
+    <h2>Análisis de Impuestos Aduaneros</h2>
+    <div class="accent-line"></div>
+  </div>
+  <div class="body">
+    <div class="chart-area">
+      <h4>Composición de la Recaudación por Tipo de Impuesto — Millones de Pesos (2018–2025)</h4>
+      <div class="chart-wrap">
+        <canvas id="chartImpuestos"></canvas>
+      </div>
+    </div>
+    <div class="pct-table">
+      <h4>Participación % por año</h4>
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align:left;">Año</th>
+            <th>IVA</th>
+            <th>IGI</th>
+            <th>DTA</th>
+            <th>IEPS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>2018</td><td>73.5%</td><td>6.8%</td><td>2.3%</td><td>17.1%</td></tr>
+          <tr><td>2019</td><td>68.4%</td><td>6.5%</td><td>2.0%</td><td>22.6%</td></tr>
+          <tr><td>2020</td><td>67.1%</td><td>6.6%</td><td>2.0%</td><td>24.0%</td></tr>
+          <tr><td>2021</td><td>74.9%</td><td>7.4%</td><td>2.2%</td><td>15.1%</td></tr>
+          <tr style="background:rgba(200,169,119,.15)"><td>2022</td><td>84.1%</td><td>8.4%</td><td>2.5%</td><td style="color:#c0392b;font-weight:700;">4.2%</td></tr>
+          <tr><td>2023</td><td>74.0%</td><td>8.8%</td><td>2.3%</td><td>14.2%</td></tr>
+          <tr><td>2024</td><td>72.6%</td><td>11.4%</td><td>2.2%</td><td>12.8%</td></tr>
+          <tr><td>2025*</td><td>68.1%</td><td>11.9%</td><td>2.1%</td><td>17.1%</td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:16px; padding:10px 12px; background:rgba(200,169,119,.15); border-left:3px solid var(--arena); border-radius:4px;">
+        <p style="font-size:10px; color:var(--gris-o); line-height:1.6;">
+          ⚠ <strong>2022:</strong> El IEPS cayó de 22.6% a 4.2% — caída de 178,000 MDP respecto a 2019.
+          <br>📈 <strong>IGI:</strong> Tendencia alcista sostenida 2021–2025, duplicando su participación.
+          <br>* Cifras 2025 preliminares.
+        </p>
+      </div>
+    </div>
+  </div>
+  <span class="slide-num dark">04 / 06</span>
+</div>
+
+<!-- ══════════════ SLIDE 5 · INFORMACIÓN ESPACIAL ══════════════ -->
+<div class="slide s5" id="slide-5">
+  <div class="header">
+    <h2>Distribución Espacial de la Recaudación — Aduanas</h2>
+    <div class="accent-line"></div>
+  </div>
+  <div class="body">
+    <div class="bars-area">
+      <h4>Top 15 Aduanas por Recaudación 2025 — Millones de Pesos MXN</h4>
+      <div class="chart-wrap">
+        <canvas id="chartAduanas"></canvas>
+      </div>
+    </div>
+    <div class="right-panel">
+      <div>
+        <p class="donut-title">Recaudación por tipo de aduana (2025)</p>
+        <div class="donut-wrap">
+          <canvas id="chartTipo"></canvas>
+        </div>
+      </div>
+      <div class="type-legend" id="typeLegend"></div>
+      <div style="background:var(--blanco); border-radius:8px; padding:12px; margin-top:auto;">
+        <p style="font-size:10px; color:#888; line-height:1.6;">
+          <strong style="color:var(--verde)">Nuevo Laredo</strong> lidera por 5° año consecutivo.
+          <br><strong style="color:var(--guinda)">Marítimas</strong> concentran el ~52% de la recaudación.
+          <br><strong style="color:#666">AIFA</strong> escala posiciones significativamente en 2025.
+        </p>
+      </div>
+    </div>
+  </div>
+  <span class="slide-num dark">05 / 06</span>
+</div>
+
+<!-- ══════════════ SLIDE 6 · SLIDE LIBRE ══════════════ -->
+<div class="slide s6" id="slide-6">
+  <div class="header">
+    <h2>Análisis Ejecutivo: Hitos y Anomalías en la Recaudación 2018–2025</h2>
+    <div class="accent-line"></div>
+  </div>
+  <div class="body">
+    <div class="left">
+      <div class="insight-card">
+        <span class="badge covid">COVID-19 · 2020</span>
+        <h4>Único año con caída en recaudación</h4>
+        <div class="big">-11.7%</div>
+        <p>La pandemia redujo la recaudación de $992,884 M (2019) a $886,135 M en 2020 — una pérdida de <strong>$106,749 M</strong>. La recuperación total se logró en 2021.</p>
+      </div>
+      <div class="insight-card">
+        <span class="badge ieps">Anomalía · 2022</span>
+        <h4>Colapso del IEPS: de 22.6% a 4.2%</h4>
+        <p>El IEPS pasó de $224,700 M en 2019 a apenas $47,099 M en 2022. Esta caída de <strong>~$177,600 M</strong> fue absorbida por el IVA, que alcanzó su máximo histórico de 84.1% de participación.</p>
+      </div>
+      <div class="insight-card">
+        <span class="badge trend">Tendencia · 2021–2025</span>
+        <h4>IGI en ascenso sostenido</h4>
+        <p>El IGI duplicó su participación en 4 años: de 6.5% (2019) a 11.9% (2025). Señal de mayor volumen y diversificación de importaciones aranceladas.</p>
+      </div>
+    </div>
+    <div class="right">
+      <h4>Evolución del IEPS y el IGI vs Recaudación Total (2018–2025)</h4>
+      <div class="chart-wrap">
+        <canvas id="chartLibre"></canvas>
+      </div>
+    </div>
+  </div>
+  <span class="slide-num dark">06 / 06</span>
+</div>
+
+</div><!-- /slides-container -->
+
+<script>
+/* ── Data ── */
+const YEARS  = ['2018','2019','2020','2021','2022','2023','2024','2025*'];
+const TOTAL  = [969816, 992884, 886135, 1024418, 1114158, 1151128, 1208632, 1449461];
+const IVA    = [712807, 679179, 594364, 767563,  937357,  851498,  877537,  986983];
+const IGI    = [65831,  65017,  58149,  75543,   93787,  100767,  137847,  172913];
+const DTA    = [21857,  20227,  17519,  22168,   28218,   26499,   27136,   30310];
+const IEPS   = [165495, 224700, 212323, 154807,  47099,  163628,  155081,  247640];
+const ISAN   = [25,9,15,19,55,53,60,47];
+const OTROS  = TOTAL.map((_,i)=> TOTAL[i]-IVA[i]-IGI[i]-DTA[i]-IEPS[i]-ISAN[i]);
+
+const GUINDA = '#611232', VERDE = '#002F2A', ARENA = '#C8A977';
+const GRIS   = '#3B3B3B', GRISL = '#E0DDD9';
+
+const top15Names = ['Nuevo Laredo','Manzanillo','Veracruz','Lázaro Cárdenas','Tuxpan',
+  'Ciudad Juárez','AIFA','Altamira','AICM','Ensenada','Mazatlán','Puebla','Reynosa','Colombia','Toluca'];
+const top15Vals  = [215227,185634,140979,137666,94293,64214,62389,47669,41769,38610,36003,34125,32382,31239,30974];
+const top15Type  = ['Fronteriza','Marítima','Marítima','Marítima','Marítima','Fronteriza','Interior',
+  'Marítima','Interior','Marítima','Marítima','Interior','Fronteriza','Fronteriza','Interior'];
+const typeColor  = t => t==='Fronteriza'?GUINDA : t==='Marítima'?VERDE : ARENA;
+
+/* ── Chart Defaults ── */
+Chart.defaults.font.family = "'Montserrat', sans-serif";
+Chart.defaults.font.size   = 11;
+Chart.defaults.color       = '#666';
+
+/* ── Slide 3: Tendencia total ── */
+const ctx3 = document.getElementById('chartResumen').getContext('2d');
+new Chart(ctx3, {
+  type:'bar',
+  data:{
+    labels:YEARS,
+    datasets:[{
+      label:'Recaudación Total (M MXN)',
+      data:TOTAL,
+      backgroundColor: YEARS.map((y,i)=> i===7?'rgba(97,18,50,.6)': i===2?'rgba(97,18,50,.3)':'rgba(0,47,42,.65)'),
+      borderColor:    YEARS.map((y,i)=> i===7?GUINDA: i===2?'rgba(97,18,50,.5)':VERDE),
+      borderWidth:2, borderRadius:4,
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:d=>`$${(d.raw/1000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',')} mil M`}}
+    },
+    scales:{
+      x:{grid:{display:false}, ticks:{font:{size:11}}},
+      y:{
+        grid:{color:'rgba(0,0,0,.06)'},
+        ticks:{callback:v=>`$${(v/1000).toFixed(0)}K`},
+        title:{display:true, text:'Millones de pesos MXN', font:{size:10}, color:'#999'}
+      }
+    }
+  }
+});
+
+/* ── Slide 4: Impuestos apilados ── */
+const ctx4 = document.getElementById('chartImpuestos').getContext('2d');
+new Chart(ctx4, {
+  type:'bar',
+  data:{
+    labels:YEARS,
+    datasets:[
+      {label:'IVA',   data:IVA,  backgroundColor:'rgba(97,18,50,.8)',  borderRadius:{topLeft:0,topRight:0}},
+      {label:'IEPS',  data:IEPS, backgroundColor:'rgba(0,47,42,.7)',   borderRadius:{topLeft:0,topRight:0}},
+      {label:'IGI',   data:IGI,  backgroundColor:'rgba(200,169,119,.9)',borderRadius:{topLeft:0,topRight:0}},
+      {label:'DTA',   data:DTA,  backgroundColor:'rgba(100,100,100,.6)',borderRadius:{topLeft:0,topRight:0}},
+      {label:'Otros', data:OTROS,backgroundColor:'rgba(200,200,200,.5)',borderRadius:{topLeft:4,topRight:4}},
+    ]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{position:'bottom', labels:{boxWidth:12,padding:16}},
+      tooltip:{callbacks:{label:d=>`${d.dataset.label}: $${d.raw.toLocaleString()} M`}}
+    },
+    scales:{
+      x:{stacked:true, grid:{display:false}},
+      y:{stacked:true, grid:{color:'rgba(0,0,0,.06)'}, ticks:{callback:v=>`$${(v/1000).toFixed(0)}K`}}
+    }
+  }
+});
+
+/* ── Slide 5: Top 15 aduanas horizontal ── */
+const ctx5 = document.getElementById('chartAduanas').getContext('2d');
+new Chart(ctx5, {
+  type:'bar',
+  data:{
+    labels:top15Names,
+    datasets:[{
+      data:top15Vals,
+      backgroundColor:top15Type.map(typeColor),
+      borderRadius:3,
+    }]
+  },
+  options:{
+    indexAxis:'y',
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:d=>`$${d.raw.toLocaleString()} M MXN · ${top15Type[d.dataIndex]}`}}
+    },
+    scales:{
+      x:{grid:{color:'rgba(0,0,0,.06)'}, ticks:{callback:v=>`$${(v/1000).toFixed(0)}K`}},
+      y:{grid:{display:false}, ticks:{font:{size:10}}}
+    }
+  }
+});
+
+/* ── Slide 5: Donut por tipo ── */
+const typeData = {Fronteriza:0, Marítima:0, Interior:0};
+const allAduanas2025 = [
+  {n:'Acapulco',t:'Marítima',v:796.67},{n:'Agua Prieta',t:'Fronteriza',v:1298.80},{n:'Aguascalientes',t:'Interior',v:12110.38},
+  {n:'AICM',t:'Interior',v:41768.75},{n:'AIFA',t:'Interior',v:62389.05},{n:'Altamira',t:'Marítima',v:47668.97},
+  {n:'Camargo',t:'Fronteriza',v:6675.96},{n:'Cancún',t:'Marítima',v:2336.29},{n:'Chihuahua',t:'Interior',v:1317.48},
+  {n:'Ciudad Acuña',t:'Fronteriza',v:1438.33},{n:'Ciudad Del Carmen',t:'Marítima',v:1221.91},{n:'Ciudad Hidalgo',t:'Fronteriza',v:2480.50},
+  {n:'Ciudad Juárez',t:'Fronteriza',v:64213.73},{n:'Coatzacoalcos',t:'Marítima',v:25639.30},{n:'Colombia',t:'Fronteriza',v:31238.86},
+  {n:'Dos Bocas',t:'Marítima',v:7952.54},{n:'Ensenada',t:'Marítima',v:38610.42},{n:'Guadalajara',t:'Interior',v:16924.86},
+  {n:'Guanajuato',t:'Interior',v:976.81},{n:'Guaymas',t:'Marítima',v:12277.01},{n:'La Paz',t:'Marítima',v:5410.59},
+  {n:'Lázaro Cárdenas',t:'Marítima',v:137665.92},{n:'Manzanillo',t:'Marítima',v:185634.26},{n:'Matamoros',t:'Fronteriza',v:30000.62},
+  {n:'Mazatlán',t:'Marítima',v:36003.05},{n:'Mexicali',t:'Fronteriza',v:15827.08},{n:'México',t:'Interior',v:12236.66},
+  {n:'Miguel Alemán',t:'Fronteriza',v:1157.74},{n:'Monterrey',t:'Interior',v:11266.43},{n:'Naco',t:'Fronteriza',v:251.95},
+  {n:'Nogales',t:'Fronteriza',v:15184.78},{n:'Nuevo Laredo',t:'Fronteriza',v:215227.13},{n:'Ojinaga',t:'Fronteriza',v:1360.17},
+  {n:'Piedras Negras',t:'Fronteriza',v:13689.10},{n:'Progreso',t:'Marítima',v:12242.89},{n:'Puebla',t:'Interior',v:34124.55},
+  {n:'Puerto Palomas',t:'Fronteriza',v:236.34},{n:'Querétaro',t:'Interior',v:11545.79},{n:'Reynosa',t:'Fronteriza',v:32382.37},
+  {n:'Salina Cruz',t:'Marítima',v:527.56},{n:'San Luis Río Colorado',t:'Fronteriza',v:367.11},{n:'Sonoyta',t:'Fronteriza',v:15.90},
+  {n:'Subteniente López',t:'Fronteriza',v:32.61},{n:'Tampico',t:'Marítima',v:6300.53},{n:'Tecate',t:'Fronteriza',v:487.17},
+  {n:'Tijuana',t:'Fronteriza',v:23855.55},{n:'Toluca',t:'Interior',v:30974.24},{n:'Torreón',t:'Interior',v:843.74},
+  {n:'Tuxpan',t:'Marítima',v:94293.22},{n:'Veracruz',t:'Marítima',v:140978.72}
+];
+allAduanas2025.forEach(a=>typeData[a.t]+=a.v);
+const typeTotals = [typeData.Fronteriza, typeData.Marítima, typeData.Interior];
+const typePcts   = typeTotals.map(v=>(v/typeTotals.reduce((a,b)=>a+b,0)*100).toFixed(1));
+
+const ctx5b = document.getElementById('chartTipo').getContext('2d');
+new Chart(ctx5b,{
+  type:'doughnut',
+  data:{
+    labels:['Fronterizas','Marítimas','Interiores'],
+    datasets:[{data:typeTotals, backgroundColor:[GUINDA,VERDE,ARENA], borderWidth:2, borderColor:'#F5F3EF'}]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:d=>`${d.label}: $${(d.raw/1000).toFixed(1)}K M (${typePcts[d.dataIndex]}%)`}}
+    }
+  }
+});
+
+const legend = document.getElementById('typeLegend');
+[['Fronterizas',GUINDA,typeTotals[0],typePcts[0]],
+ ['Marítimas',VERDE,typeTotals[1],typePcts[1]],
+ ['Interiores',ARENA,typeTotals[2],typePcts[2]]].forEach(([n,c,v,p])=>{
+  legend.innerHTML+=`<div class="type-row">
+    <div class="type-dot" style="background:${c}"></div>
+    <div class="type-info">
+      <div class="type-name">${n}</div>
+      <div class="type-val">$${(v/1000).toFixed(1)}K M · ${p}%</div>
+    </div>
+  </div>`;
+});
+
+/* ── Slide 6: Libre — IEPS + IGI vs Total ── */
+const ctx6 = document.getElementById('chartLibre').getContext('2d');
+new Chart(ctx6,{
+  type:'line',
+  data:{
+    labels:YEARS,
+    datasets:[
+      {
+        label:'IEPS (eje izq.)', data:IEPS,
+        borderColor:GUINDA, backgroundColor:'rgba(97,18,50,.1)',
+        fill:true, tension:.4, pointRadius:5, pointBackgroundColor:GUINDA,
+        yAxisID:'y',
+      },{
+        label:'IGI (eje izq.)', data:IGI,
+        borderColor:ARENA, backgroundColor:'rgba(200,169,119,.1)',
+        fill:false, tension:.4, pointRadius:5, pointBackgroundColor:ARENA,
+        yAxisID:'y',
+      },{
+        label:'Recaudación Total (eje der.)', data:TOTAL,
+        borderColor:VERDE, backgroundColor:'transparent',
+        borderDash:[6,3], fill:false, tension:.4, pointRadius:4,
+        pointBackgroundColor:VERDE,
+        yAxisID:'y2',
+      }
+    ]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    interaction:{mode:'index'},
+    plugins:{
+      legend:{position:'bottom', labels:{boxWidth:12,padding:14}},
+      tooltip:{callbacks:{label:d=>`${d.dataset.label}: $${d.raw.toLocaleString()} M`}}
+    },
+    scales:{
+      x:{grid:{display:false}},
+      y:{
+        position:'left', grid:{color:'rgba(0,0,0,.06)'},
+        ticks:{callback:v=>`$${(v/1000).toFixed(0)}K`},
+        title:{display:true, text:'IEPS / IGI (M MXN)', font:{size:10}, color:'#999'}
+      },
+      y2:{
+        position:'right', grid:{display:false},
+        ticks:{callback:v=>`$${(v/1000).toFixed(0)}K`},
+        title:{display:true, text:'Total (M MXN)', font:{size:10}, color:'#999'}
+      }
+    }
+  }
+});
+
+/* ── Navigation ── */
+let current = 0;
+const slideEls = document.querySelectorAll('.slide');
+
+function scrollToSlide(idx){
+  if(idx<0||idx>=slideEls.length) return;
+  current=idx;
+  slideEls[idx].scrollIntoView({behavior:'smooth',block:'center'});
+  document.getElementById('slide-counter').textContent=`${idx+1} / ${slideEls.length}`;
+}
+function prevSlide(){ scrollToSlide(current-1); }
+function nextSlide(){ scrollToSlide(current+1); }
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='ArrowDown') nextSlide();
+  if(e.key==='ArrowLeft' ||e.key==='ArrowUp')   prevSlide();
+});
+</script>
+</body>
+</html>

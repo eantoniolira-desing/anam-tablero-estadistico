@@ -1,9 +1,8 @@
 {
-  "framework": null,
   "rewrites": [
-    { "source": "/ejecutiva", "destination": "/Output/Ejercicio2_Vista_Ejecutiva.html" },
-    { "source": "/operativa", "destination": "/Output/Ejercicio2_Vista_Operativa.html" },
-    { "source": "/impuestos", "destination": "/Output/Ejercicio2_Vista_Impuestos.html" },
-    { "source": "/presentacion", "destination": "/Output/Ejercicio1_Presentacion.html" }
+    { "source": "/ejecutiva", "destination": "/ejecutiva.html" },
+    { "source": "/operativa", "destination": "/operativa.html" },
+    { "source": "/impuestos", "destination": "/impuestos.html" },
+    { "source": "/presentacion", "destination": "/presentacion.html" }
   ]
 }
