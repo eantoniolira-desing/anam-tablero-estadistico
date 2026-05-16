@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ANAM · Tablero Estadístico — Vista Operativa</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --guinda:#611232;--verde:#002F2A;--arena:#C8A977;
+    --gris-c:#F5F3EF;--gris-o:#3B3B3B;--blanco:#FFFFFF;
+    --border:rgba(0,0,0,.08);--shadow:0 2px 12px rgba(0,0,0,.08);
+    --sidebar:220px;--header:60px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Montserrat',sans-serif;background:#EDECEA;color:var(--gris-o);display:flex;min-height:100vh;}
+
+  aside{width:var(--sidebar);background:var(--verde);position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;z-index:100;}
+  .sidebar-logo{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.1);}
+  .sidebar-logo img{height:38px;object-fit:contain;filter:brightness(0) invert(1);width:100%;}
+  .sidebar-logo .org{font-size:9px;color:rgba(255,255,255,.5);letter-spacing:1.5px;text-transform:uppercase;margin-top:8px;}
+  nav{padding:20px 0;flex:1;}
+  nav a{display:flex;align-items:center;gap:10px;padding:11px 22px;font-size:12px;font-weight:500;color:rgba(255,255,255,.65);text-decoration:none;transition:.2s;cursor:pointer;}
+  nav a:hover{color:var(--blanco);background:rgba(255,255,255,.07);}
+  nav a.active{color:var(--blanco);background:rgba(255,255,255,.12);border-left:3px solid var(--arena);}
+  nav a .ico{font-size:15px;width:20px;text-align:center;}
+  nav .section-title{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:2px;text-transform:uppercase;padding:18px 22px 8px;}
+  .sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.1);font-size:10px;color:rgba(255,255,255,.35);line-height:1.6;}
+
+  main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;}
+  .topbar{height:var(--header);background:var(--blanco);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 32px;gap:16px;position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+  .topbar .title{font-size:14px;font-weight:700;color:var(--gris-o);flex:1;}
+  .topbar .title span{color:var(--verde);}
+  .filter-group{display:flex;align-items:center;gap:8px;}
+  .filter-label{font-size:10px;color:#999;font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+  .filter-chip{border:1px solid var(--border);border-radius:20px;padding:5px 14px;font-size:11px;font-weight:500;color:var(--gris-o);cursor:pointer;background:var(--blanco);transition:.15s;font-family:'Montserrat',sans-serif;}
+  .filter-chip.active{background:var(--verde);color:var(--blanco);border-color:var(--verde);}
+  select.filter-chip{appearance:none;padding-right:24px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 8px center;}
+
+  .content{padding:24px 32px;display:flex;flex-direction:column;gap:20px;}
+  .card{background:var(--blanco);border-radius:12px;padding:22px 24px;box-shadow:var(--shadow);}
+  .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .card-title{font-size:13px;font-weight:700;color:var(--gris-o);}
+  .card-sub{font-size:10px;color:#aaa;margin-top:2px;}
+  .card-badge{font-size:10px;padding:3px 10px;border-radius:20px;font-weight:600;}
+  .card-badge.verde{background:rgba(0,47,42,.1);color:var(--verde);}
+  .card-badge.guinda{background:rgba(97,18,50,.1);color:var(--guinda);}
+  .card-badge.arena{background:rgba(200,169,119,.2);color:#7a5c2a;}
+
+  /* ── KPI strip ── */
+  .kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+  .kpi-s{background:var(--blanco);border-radius:10px;padding:16px 20px;box-shadow:var(--shadow);border-top:3px solid var(--guinda);}
+  .kpi-s.v{border-top-color:var(--verde);}
+  .kpi-s.a{border-top-color:var(--arena);}
+  .kpi-s.g{border-top-color:#888;}
+  .kpi-s .eyebrow{font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;}
+  .kpi-s .val{font-size:22px;font-weight:800;color:var(--gris-o);}
+  .kpi-s .sub{font-size:10px;color:#aaa;margin-top:4px;}
+
+  /* ── Main grid ── */
+  .main-grid{display:grid;grid-template-columns:1fr 440px;gap:16px;align-items:start;}
+
+  /* ── Table ── */
+  .data-table-wrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:11px;}
+  thead th{padding:8px 10px;text-align:right;font-weight:700;color:var(--verde);border-bottom:2px solid var(--verde);white-space:nowrap;}
+  thead th:first-child{text-align:left;}
+  thead th:nth-child(2){text-align:left;}
+  tbody td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--border);color:var(--gris-o);}
+  tbody td:first-child{font-weight:700;color:var(--gris-o);}
+  tbody td:nth-child(2){text-align:left;}
+  tbody tr:hover td{background:rgba(0,47,42,.03);}
+  tbody tr:nth-child(1) td{color:var(--guinda);font-weight:700;}
+  .type-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:600;text-transform:uppercase;}
+  .type-badge.F{background:rgba(97,18,50,.1);color:var(--guinda);}
+  .type-badge.M{background:rgba(0,47,42,.1);color:var(--verde);}
+  .type-badge.I{background:rgba(200,169,119,.2);color:#7a5c2a;}
+  .rank-num{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:10px;font-weight:700;background:var(--gris-c);color:var(--gris-o);}
+  .rank-num.top{background:var(--guinda);color:var(--blanco);}
+
+  /* ── Right panel ── */
+  .right-col{display:flex;flex-direction:column;gap:16px;}
+  .chart-wrap{position:relative;}
+
+  /* Mexico map placeholder */
+  .map-placeholder{
+    height:280px;background:linear-gradient(135deg,var(--gris-c),#E8E4DE);
+    border-radius:10px;position:relative;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;
+  }
+  .map-placeholder .map-label{font-size:11px;color:#aaa;text-align:center;padding:0 20px;}
+  /* Stylized Mexico map using CSS */
+  .mexico-svg{width:320px;height:200px;opacity:.5;}
+
+  /* Aduana dots on map */
+  .dot-container{position:absolute;inset:0;}
+  .aduana-dot{position:absolute;border-radius:50%;transform:translate(-50%,-50%);transition:.2s;}
+  .aduana-dot:hover{opacity:.8;transform:translate(-50%,-50%) scale(1.2);}
+
+  /* Comparison chart bottom */
+  .bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+
+  .footer-strip{background:var(--verde);color:rgba(255,255,255,.5);font-size:10px;padding:10px 32px;display:flex;justify-content:space-between;align-items:center;}
+
+  /* Delta cells */
+  .delta-up{color:#065F46;font-weight:600;}
+  .delta-down{color:#991B1B;font-weight:600;}
+
+  @media print{aside{display:none;}main{margin-left:0;}}
+  /* ── Mobile hamburger & overlay ── */
+  .hamburger-btn{display:none;flex-direction:column;justify-content:space-between;width:38px;height:38px;flex-shrink:0;background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;padding:9px 8px;}
+  .hamburger-btn span{display:block;height:2px;width:100%;background:var(--gris-o);border-radius:2px;transition:.2s;}
+  .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:199;}
+  .sidebar-overlay.active{display:block;}
+  /* ── Responsive: iPhone 16 / mobile ── */
+  @media(max-width:768px){
+    aside{transform:translateX(-100%);transition:transform .3s ease;z-index:200;padding-top:env(safe-area-inset-top,0);}
+    aside.mob-open{transform:translateX(0);}
+    .hamburger-btn{display:flex;}
+    main{margin-left:0!important;}
+    .topbar{height:auto;flex-wrap:wrap;padding:10px 16px 8px;gap:8px;padding-top:max(10px,env(safe-area-inset-top,10px));}
+    .topbar .title{font-size:11px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .filter-group{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap;width:100%;}
+    .filter-group::-webkit-scrollbar{display:none;}
+    .filter-chip{white-space:nowrap;font-size:10px;padding:4px 10px;}
+    select.filter-chip{font-size:10px;}
+    .content{padding:14px 16px;gap:14px;}
+    .card{padding:16px;}
+    .kpi-strip{grid-template-columns:1fr 1fr;}
+    .kpi-s{padding:14px 14px;}
+    .kpi-s .val{font-size:17px;}
+    .charts-grid{grid-template-columns:1fr!important;}
+    .charts-grid-bottom{grid-template-columns:1fr!important;}
+    .grid-2{grid-template-columns:1fr!important;}
+    .grid-3{grid-template-columns:1fr!important;}
+    .main-grid{grid-template-columns:1fr!important;}
+    .right-col{gap:14px;}
+    #mapaMexico{height:240px!important;}
+    .data-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+    table{font-size:10px;}
+    thead th,tbody td{padding:5px 6px;}
+    .card-title{font-size:12px;}
+    .card-sub{font-size:9px;}
+    .ap-header{padding:0 16px;}
+    .ap-section{padding:16px;}
+    .ap-feat-grid{grid-template-columns:1fr!important;}
+    .ap-hero{flex-direction:column;gap:12px;padding:20px;}
+    .ap-hero .ico{font-size:36px;}
+    .ap-hero h2{font-size:15px;}
+    .ap-hero p{font-size:11px;}
+    .ap-cfg-row{flex-wrap:wrap;gap:10px;}
+    .footer-strip{flex-direction:column;gap:4px;font-size:9px;padding:8px 16px;text-align:center;}
+    .sidebar-footer{padding-bottom:max(16px,env(safe-area-inset-bottom,16px));}
+  }
+  /* ── Accesos Pane ── */
+  #accesosPane{flex:1;overflow-y:auto;flex-direction:column;display:none;margin-left:var(--sidebar);}
+  #accesosPane.open{display:flex;}
+  @media(max-width:768px){#accesosPane{margin-left:0;}}
+  .ap-header{height:var(--header);background:var(--blanco);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 32px;gap:16px;position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+  .ap-back{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--verde);background:none;border:1px solid var(--border);border-radius:20px;padding:6px 16px;cursor:pointer;font-family:inherit;transition:.15s;}
+  .ap-back:hover{background:var(--gris-c);}
+  .ap-title{font-size:14px;font-weight:700;color:var(--gris-o);flex:1;}
+  .ap-title span{color:var(--guinda);}
+  .ap-section{padding:24px 32px;display:none;flex-direction:column;gap:20px;}
+  .ap-section.vis{display:flex;}
+  .ap-hero{border-radius:12px;padding:28px 32px;display:flex;align-items:center;gap:24px;}
+  .ap-hero .ico{font-size:48px;opacity:.7;flex-shrink:0;}
+  .ap-hero h2{font-size:18px;font-weight:800;color:var(--blanco);margin-bottom:8px;}
+  .ap-hero p{font-size:12px;color:rgba(255,255,255,.82);line-height:1.7;max-width:620px;}
+  .ap-feat-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .ap-feat{background:var(--blanco);border-radius:12px;padding:20px 24px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px;}
+  .ap-feat-head{display:flex;align-items:center;gap:12px;}
+  .ap-feat-ico{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+  .ap-feat-title{font-size:13px;font-weight:700;color:var(--gris-o);}
+  .ap-feat-desc{font-size:11px;color:#777;line-height:1.7;}
+  .ap-feat-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px;}
+  .ap-feat-tag{font-size:9px;font-weight:600;padding:2px 8px;border-radius:10px;background:var(--gris-c);color:#777;text-transform:uppercase;letter-spacing:.5px;}
+  .ap-feat-vis{display:flex;align-items:center;justify-content:space-between;margin-top:6px;padding-top:8px;border-top:1px dashed rgba(0,0,0,.08);}
+  .ap-feat-vis-label{font-size:10px;color:#aaa;font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+  .tog-wrap{display:flex;align-items:center;gap:8px;}
+  .tog-track{width:42px;height:22px;background:#ddd;border-radius:11px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;}
+  .tog-track.on{background:var(--verde);}
+  .tog-knob{position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+  .tog-track.on .tog-knob{left:23px;}
+  .tog-label{font-size:10px;font-weight:600;color:#aaa;}
+  .tog-track.on+.tog-label{color:var(--verde);}
+  .ap-note{background:linear-gradient(135deg,rgba(97,18,50,.06),rgba(97,18,50,.02));border:1px solid rgba(97,18,50,.15);border-radius:12px;padding:18px 22px;display:flex;align-items:flex-start;gap:14px;}
+  .ap-note .badge{background:var(--guinda);color:var(--blanco);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;margin-top:2px;flex-shrink:0;}
+  .ap-note .text{font-size:12px;color:var(--gris-o);line-height:1.7;}
+  .ap-note .text strong{color:var(--guinda);}
+  .ap-cfg-row{background:var(--blanco);border-radius:12px;padding:18px 24px;box-shadow:var(--shadow);display:flex;align-items:center;gap:16px;}
+  .ap-cfg-ico{font-size:22px;width:36px;text-align:center;flex-shrink:0;}
+  .ap-cfg-name{font-size:13px;font-weight:700;color:var(--gris-o);}
+  .ap-cfg-desc{font-size:11px;color:#aaa;margin-top:2px;}
+  .ap-cfg-info{flex:1;}
+  .ap-group-label{font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:1.5px;padding-left:4px;}
+</style>
+</head>
+<body>
+
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+<aside>
+  <div class="sidebar-logo">
+    <img src="../Logos/Logos/Logo_Agencia_Nacional_de_Aduanas.png" alt="ANAM">
+    <div class="org">Tablero Estadístico</div>
+  </div>
+  <nav>
+    <div class="section-title">Vistas</div>
+    <a href="Ejercicio2_Vista_Ejecutiva.html"><span class="ico">⬛</span> Vista Ejecutiva</a>
+    <a href="Ejercicio2_Vista_Operativa.html" class="active"><span class="ico">🗺</span> Vista Operativa</a>
+    <a href="Ejercicio2_Vista_Impuestos.html"><span class="ico">📈</span> Impuestos y Recaudación</a>
+    <div class="section-title" id="accesosSectionTitle" style="margin-top:8px;">Accesos</div>
+    <a id="navPedimentos" data-accesos="pedimentos"><span class="ico">📄</span> Pedimentos</a>
+    <a id="navComExt" data-accesos="comext"><span class="ico">🚢</span> Com. Exterior</a>
+    <a id="navConfig" data-accesos="config"><span class="ico">⚙️</span> Configuración</a>
+  </nav>
+  <div class="sidebar-footer">Datos: ANAM · Flujo de efectivo<br>Periodo: 2018–2025*<br>Última actualización: Mayo 2025</div>
+</aside>
+
+<main>
+  <div class="topbar">
+    <button class="hamburger-btn" onclick="toggleSidebar()" aria-label="Menú"><span></span><span></span><span></span></button>
+    <div class="title"><span>Vista Operativa</span> — Análisis de Operación Aduanera</div>
+    <div class="filter-group">
+      <span class="filter-label">Periodo</span>
+      <button class="filter-chip active">2025*</button>
+      <button class="filter-chip">2024</button>
+      <button class="filter-chip">2023</button>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Tipo</span>
+      <select class="filter-chip">
+        <option>Todas</option><option>Fronteriza</option><option>Marítima</option><option>Interior</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Región</span>
+      <select class="filter-chip">
+        <option>Nacional</option><option>Norte</option><option>Centro</option><option>Sureste</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- KPI strip -->
+    <div class="kpi-strip">
+      <div class="kpi-s">
+        <div class="eyebrow">Mayor Aduana 2025</div>
+        <div class="val">Nuevo Laredo</div>
+        <div class="sub">$215,227 M · 14.8% del total</div>
+      </div>
+      <div class="kpi-s v">
+        <div class="eyebrow">Mayor Crecimiento 2024→25</div>
+        <div class="val">Tuxpan +147%</div>
+        <div class="sub">De $38,206 M a $94,293 M</div>
+      </div>
+      <div class="kpi-s a">
+        <div class="eyebrow">Tipo Dominante</div>
+        <div class="val">Marítimas 52.2%</div>
+        <div class="sub">$756,580 M de $1,449,461 M total</div>
+      </div>
+      <div class="kpi-s g">
+        <div class="eyebrow">Aduanas Fronterizas</div>
+        <div class="val">31.6% del total</div>
+        <div class="sub">Lideradas por Nuevo Laredo</div>
+      </div>
+    </div>
+
+    <!-- Main grid: table + right panel -->
+    <div class="main-grid">
+      <!-- Ranking table -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Ranking de Aduanas por Recaudación</div>
+            <div class="card-sub">Top 20 · Millones de pesos MXN · Comparativo 2023–2024–2025*</div>
+          </div>
+          <span class="card-badge verde">Top 20 · 2025*</span>
+        </div>
+        <div class="data-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="text-align:center;width:36px;">#</th>
+                <th>Aduana</th>
+                <th>Tipo</th>
+                <th>2023</th>
+                <th>2024</th>
+                <th>2025*</th>
+                <th>Δ% 24→25</th>
+              </tr>
+            </thead>
+            <tbody id="rankingBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Right column -->
+      <div class="right-col">
+        <!-- Map -->
+        <div class="card" style="padding:16px 20px;">
+          <div class="card-header" style="margin-bottom:10px;">
+            <div>
+              <div class="card-title">Distribución Geográfica</div>
+              <div class="card-sub">Intensidad por recaudación 2025 — tamaño proporcional</div>
+            </div>
+          </div>
+          <div id="mapaMexico" style="height:280px;border-radius:10px;overflow:hidden;"></div>
+        </div>
+
+        <!-- Tipo breakdown redesigned -->
+        <div class="card" style="padding:0;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:0;">
+          <div style="padding:16px 20px 12px;border-bottom:1px solid rgba(0,0,0,.06);">
+            <div class="card-title">Recaudación por Tipo de Aduana</div>
+            <div class="card-sub" id="tipoCardSub">2025* · Total: $1,449,461 M</div>
+          </div>
+          <!-- Donut + mini stats row -->
+          <div style="display:flex;align-items:center;padding:14px 20px;gap:14px;border-bottom:1px solid rgba(0,0,0,.06);">
+            <div style="position:relative;width:100px;height:100px;flex-shrink:0;">
+              <canvas id="chartTipoDonut"></canvas>
+              <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;text-align:center;">
+                <div style="font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Total</div>
+                <div id="tipoTotalVal" style="font-size:14px;font-weight:800;color:#3B3B3B;line-height:1.1;">$1,449K</div>
+                <div style="font-size:8px;color:#aaa;">M MXN</div>
+              </div>
+            </div>
+            <div id="tipoMiniStats" style="flex:1;display:flex;flex-direction:column;gap:8px;"></div>
+          </div>
+          <!-- Colored panels -->
+          <div id="tipoPanels" style="flex:1;display:flex;flex-direction:column;min-height:120px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom: comparative chart -->
+    <div class="bottom-grid">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Comparativo Top 10 Aduanas — 2023 vs 2024 vs 2025*</div>
+            <div class="card-sub">Millones de pesos MXN</div>
+          </div>
+          <span class="card-badge arena">3 años</span>
+        </div>
+        <div class="chart-wrap" style="height:200px;">
+          <canvas id="chartComparativo"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Variación 2024 → 2025 por Aduana</div>
+            <div class="card-sub">Δ% — Top 15 aduanas</div>
+          </div>
+        </div>
+        <div class="chart-wrap" style="height:200px;">
+          <canvas id="chartDelta"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="footer-strip">
+    <span>Fuente: ANAM · Flujo de efectivo · *Cifras preliminares sujetas a revisión</span>
+    <span>Unidades: Millones de pesos MXN</span>
+  </div>
+</main>
+
+<!-- ── Accesos Pane ── -->
+<div id="accesosPane">
+  <div class="ap-header">
+    <button class="ap-back" onclick="showMain()">&#8592; Volver al Tablero</button>
+    <div class="ap-title" id="apTitle"><span>Accesos</span></div>
+  </div>
+
+  <!-- Pedimentos -->
+  <div class="ap-section" id="apPedimentos">
+    <div class="ap-hero" style="background:var(--verde);">
+      <div class="ico">📄</div>
+      <div>
+        <h2>Módulo de Pedimentos</h2>
+        <p>Gestión integral del ciclo de vida del pedimento aduanero. Permite consultar, dar seguimiento, rectificar y auditar operaciones de importación y exportación registradas ante la ANAM. Diseñado para agentes aduanales, operadores y equipos de cumplimiento.</p>
+      </div>
+    </div>
+    <div class="ap-feat-grid">
+      <div class="ap-feat">
+        <div class="ap-feat-head">
+          <div class="ap-feat-ico" style="background:rgba(97,18,50,.1);color:var(--guinda);">🔍</div>
+          <div class="ap-feat-title">Consulta de Pedimentos</div>
+        </div>
+        <div class="ap-feat-desc">Búsqueda avanzada por número de pedimento, aduana de despacho, importador/exportador, fracción arancelaria, fecha de operación y régimen aduanero.</div>
+        <div class="ap-feat-tags"><span class="ap-feat-tag">Búsqueda</span><span class="ap-feat-tag">Filtros</span><span class="ap-feat-tag">Exportar</span></div>
+        <div class="ap-feat-vis">
+          <span class="ap-feat-vis-label">Visibilidad en tablero</span>
+          <div class="tog-wrap"><div class="tog-track on" data-tog="ped-consulta" data-on="Visible" data-off="Oculto"><div class="tog-knob"></div></div><span class="tog-label">Visible</span></div>
+        </div>
+      </div>
+      <div class="ap-feat">
+        <div class="ap-feat-head">
+          <div class="ap-feat-ico" style="background:rgba(0,47,42,.1);color:var(--verde);">📊</div>
+          <div class="ap-feat-title">Seguimiento de Estado</div>
+        </div>
+        <div class="ap-feat-desc">Monitoreo en tiempo real del estado de tramitación: validación documental, pago de contribuciones, selección de canal de revisión y liberación de mercancía.</div>
+        <div class="ap-feat-tags"><span class="ap-feat-tag">Tiempo real</span><span class="ap-feat-tag">Alertas</span><span class="ap-feat-tag">Canal</span></div>
+        <div class="ap-feat-vis">
+          <span class="ap-feat-vis-label">Visibilidad en tablero</span>
+          <div class="tog-wrap"><div class="tog-track on" data-tog="ped-estado" data-on="Visible" data-off="Oculto"><div class="tog-knob"></div></div><span class="tog-label">Visible</span></div>
+        </div>
+      </div>
+      <div class="ap-feat">
+        <div class="ap-feat-head">
+          <div class="ap-feat-ico" style="background:rgba(200,169,119,.2);color:#7a5c2a;">✏️</div>
+          <div class="ap-feat-title">Rectificación y Complementos</div>
+        </div>
+        <div class="ap-feat-desc">Gestión de rectificaciones y complementos para corrección de datos fiscales, descripción de mercancía o valores declarados, conforme al Reglamento de la Ley Aduanera.</div>
+        <div class="ap-feat-tags"><span class="ap-feat-tag">RGCE</span><span class="ap-feat-tag">SAT</span><span class="ap-feat-tag">Auditoría</span></div>
+        <div class="ap-feat-vis">
+          <span class="ap-feat-vis-label">Visibilidad en tablero</span>
+          <div class="tog-wrap"><div class="tog-track" data-tog="ped-rect" data-on="Visible" data-off="Oculto"><div class="tog-knob"></div></div><span class="tog-label">Oculto</span></div>
+        </div>
+      </div>
+      <div class="ap-feat">
+        <div class="ap-feat-head">
+          <div class="ap-feat-ico" style="background:rgba(0,0,0,.05);color:#888;">📋</div>
+          <div class="ap-feat-title">Histórico de Operaciones</div>
+        </div>
+        <div class="ap-feat-desc">Registro auditable e inmutable de todas las operaciones. Cumple con el artículo 162 de la Ley Aduanera para conservación de documentación digital.</div>
+        <div class="ap-feat-tags"><span class="ap-feat-tag">Historial</span><span class="ap-feat-tag">Ley Aduanera</span><span class="ap-feat-tag">CFDI</span></div>
+        <div class="ap-feat-vis">
+          <span class="ap-feat-vis-label">Visibilidad en tablero</span>
+          <div class="tog-wrap"><div class="tog-track on" data-tog="ped-hist" data-on="Visible" data-off="Oculto"><div class="tog-knob"></div></div><span class="tog-label">Visible</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="ap-note">
+      <span class="badge">ℹ️ Nota</span>
+      <div class="text">Este módulo es <strong>configurable por rol y perfil de usuario</strong>. Los administradores pueden activar o desactivar cada sección de forma individual, controlar niveles de acceso por aduana o región y personalizar qué métricas son visibles para cada equipo. Los cambios de visibilidad se persisten por sesión y perfil.</div>
+    </div>
+  </div>
+
+  <!-- Com. Exterior -->
+  <div class="ap-section" id="apComext">
+    <div class="ap-hero" style="background:var(--verde);">
+      <div class="ico">🚢</div>
+      <div>
+        <h2>Módulo de Comercio Exterior</h2>
+        <p>Análisis estratégico de los flujos de comercio internacional de México. Integra datos de importaciones, exportaciones, regímenes aduaneros y balanza comercial para apoyar la toma de decisiones operativa y de política comercial.</p>
+      </div>
+    </div>
+    <div class="ap-feat-grid">
+      <div class="ap-feat">
+        <div class="ap-feat-head">
+          <div class="ap-feat-ico" style="background:rgba(97,18,50,.1);color:var(--guinda);">📥</div>
+          <div class="ap-feat-title">Flujo de Importaciones</div>
+        </div>
+        <div class="ap-feat-desc">Análisis de mercancías importadas por fracción arancelaria, país de origen, importador, aduana de entrada y valor en aduana declarado. Comparativo mensual y anual incluido.</div>
+        <div class="ap-feat-tags"><span class="ap-feat-tag">SAT</span><span class="ap-feat-tag">VUCEM</span><span class="ap-feat-tag">Análisis</span></div>
+        <div class="ap-feat-vis">
+          <span class="ap-feat-vis-label">Visibilidad en tablero</span>
+          <div class="tog-wrap"><div class="tog-track on" data-tog="ce-imp" data-on="Visible" data-off="Oculto"><div class="tog-knob"></div></div><span class="tog-label">Visible</span></div>
+        </div>
+      </div>
+      <div class="ap-feat">
+        <div class="ap-feat-head">
+          <div class="ap-feat-ico" style="background:rgba(0,47,42,.1);color:var(--verde);">📤</div>
+          <div class="ap-feat-title">Flujo de Exportaciones</div>
+        </div>
+        <div class="ap-feat-desc">Monitoreo de exportaciones por sector productivo, país destino y tipo de mercancía. Identifica tendencias de crecimiento y sectores estratégicos de la economía exportadora.</div>
+        <div class="ap-feat-tags"><span class="ap-feat-tag">Exportación</span><span class="ap-feat-tag">PROSEC</span><span class="ap-feat-tag">T-MEC</span></div>
+        <div class="ap-feat-vis">
+          <span class="ap-feat-vis-label">Visibilidad en tablero</span>
+          <div class="tog-wrap"><div class="tog-track on" data-tog="ce-exp" data-on="Visible" data-off="Oculto"><div class="tog-knob"></div></div><span class="tog-label">Visible</span></div>
+        </div>
+      </div>
+      <div class="ap-feat">
+        <div class="ap-feat-head">
+          <div class="ap-feat-ico" style="background:rgba(200,169,119,.2);color:#7a5c2a;">🔄</div>
+          <div class="ap-feat-title">Regímenes Aduaneros</div>
+        </div>
+        <div class="ap-feat-desc">Operaciones desagregadas por régimen: importación definitiva, temporal para transformación (IMMEX), depósito fiscal, tránsito interno e internacional y elaboración.</div>
+        <div class="ap-feat-tags"><span class="ap-feat-tag">IMMEX</span><span class="ap-feat-tag">Depósito</span><span class="ap-feat-tag">Tránsito</span></div>
+        <div class="ap-feat-vis">
+          <span class="ap-feat-vis-label">Visibilidad en tablero</span>
+          <div class="tog-wrap"><div class="tog-track" data-tog="ce-reg" data-on="Visible" data-off="Oculto"><div class="tog-knob"></div></div><span class="tog-label">Oculto</span></div>
+        </div>
+      </div>
+      <div class="ap-feat">
+        <div class="ap-feat-head">
+          <div class="ap-feat-ico" style="background:rgba(0,0,0,.05);color:#888;">⚖️</div>
+          <div class="ap-feat-title">Indicadores de Balanza Comercial</div>
+        </div>
+        <div class="ap-feat-desc">Métricas de balanza comercial por periodo, sector SCIAN y socio comercial. Integra comparativos históricos y proyecciones basadas en tendencias de los últimos 8 años.</div>
+        <div class="ap-feat-tags"><span class="ap-feat-tag">Balanza</span><span class="ap-feat-tag">SCIAN</span><span class="ap-feat-tag">BI</span></div>
+        <div class="ap-feat-vis">
+          <span class="ap-feat-vis-label">Visibilidad en tablero</span>
+          <div class="tog-wrap"><div class="tog-track on" data-tog="ce-bal" data-on="Visible" data-off="Oculto"><div class="tog-knob"></div></div><span class="tog-label">Visible</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="ap-note">
+      <span class="badge">ℹ️ Nota</span>
+      <div class="text">Las secciones de este módulo son <strong>configurables por perfil de usuario</strong>. Análisis estratégico, inteligencia de negocios y dirección general pueden habilitar vistas diferenciadas con distintos niveles de detalle y granularidad según el rol asignado en el sistema.</div>
+    </div>
+  </div>
+
+  <!-- Configuración -->
+  <div class="ap-section" id="apConfig">
+    <div class="ap-hero" style="background:var(--guinda);">
+      <div class="ico">⚙️</div>
+      <div>
+        <h2>Panel de Configuración</h2>
+        <p>Administración centralizada de la visibilidad y comportamiento del tablero estadístico. Configure qué módulos, secciones y métricas son visibles para cada rol de usuario. Los cambios se aplican de forma inmediata y se persisten en sesión local del navegador.</p>
+      </div>
+    </div>
+    <div class="ap-group-label">Módulos del Sistema</div>
+    <div class="ap-cfg-row">
+      <div class="ap-cfg-ico">📄</div>
+      <div class="ap-cfg-info"><div class="ap-cfg-name">Módulo Pedimentos</div><div class="ap-cfg-desc">Gestión de pedimentos aduaneros — consulta, seguimiento y rectificación</div></div>
+      <div class="tog-wrap"><div class="tog-track on" data-tog="mod-pedimentos" data-on="Activo" data-off="Inactivo"><div class="tog-knob"></div></div><span class="tog-label">Activo</span></div>
+    </div>
+    <div class="ap-cfg-row">
+      <div class="ap-cfg-ico">🚢</div>
+      <div class="ap-cfg-info"><div class="ap-cfg-name">Módulo Com. Exterior</div><div class="ap-cfg-desc">Análisis de flujos de importación, exportación y balanza comercial</div></div>
+      <div class="tog-wrap"><div class="tog-track on" data-tog="mod-comext" data-on="Activo" data-off="Inactivo"><div class="tog-knob"></div></div><span class="tog-label">Activo</span></div>
+    </div>
+    <div class="ap-cfg-row">
+      <div class="ap-cfg-ico">🔔</div>
+      <div class="ap-cfg-info"><div class="ap-cfg-name">Alertas y Notificaciones</div><div class="ap-cfg-desc">Sistema de alertas operativas por umbral de recaudación y anomalías detectadas</div></div>
+      <div class="tog-wrap"><div class="tog-track" data-tog="mod-alertas" data-on="Activo" data-off="Inactivo"><div class="tog-knob"></div></div><span class="tog-label">Inactivo</span></div>
+    </div>
+    <div class="ap-cfg-row">
+      <div class="ap-cfg-ico">📁</div>
+      <div class="ap-cfg-info"><div class="ap-cfg-name">Reportes y Exportaciones</div><div class="ap-cfg-desc">Generación de reportes PDF y Excel con los datos del tablero activo</div></div>
+      <div class="tog-wrap"><div class="tog-track on" data-tog="mod-reportes" data-on="Activo" data-off="Inactivo"><div class="tog-knob"></div></div><span class="tog-label">Activo</span></div>
+    </div>
+    <div class="ap-group-label">Secciones del Tablero</div>
+    <div class="ap-cfg-row">
+      <div class="ap-cfg-ico">💰</div>
+      <div class="ap-cfg-info"><div class="ap-cfg-name">Panel de KPIs</div><div class="ap-cfg-desc">Métricas principales de recaudación — total, impuesto dominante y tendencia</div></div>
+      <div class="tog-wrap"><div class="tog-track on" data-tog="sec-kpis" data-on="Visible" data-off="Oculto"><div class="tog-knob"></div></div><span class="tog-label">Visible</span></div>
+    </div>
+    <div class="ap-cfg-row">
+      <div class="ap-cfg-ico">🗺️</div>
+      <div class="ap-cfg-info"><div class="ap-cfg-name">Distribución Geográfica</div><div class="ap-cfg-desc">Mapa interactivo de aduanas con intensidad proporcional a recaudación 2025</div></div>
+      <div class="tog-wrap"><div class="tog-track on" data-tog="sec-mapa" data-on="Visible" data-off="Oculto"><div class="tog-knob"></div></div><span class="tog-label">Visible</span></div>
+    </div>
+    <div class="ap-cfg-row">
+      <div class="ap-cfg-ico">📈</div>
+      <div class="ap-cfg-info"><div class="ap-cfg-name">Tendencia Histórica</div><div class="ap-cfg-desc">Gráficas de evolución temporal 2018–2025 por impuesto y tipo de aduana</div></div>
+      <div class="tog-wrap"><div class="tog-track on" data-tog="sec-tendencia" data-on="Visible" data-off="Oculto"><div class="tog-knob"></div></div><span class="tog-label">Visible</span></div>
+    </div>
+    <div class="ap-cfg-row">
+      <div class="ap-cfg-ico">🏆</div>
+      <div class="ap-cfg-info"><div class="ap-cfg-name">Ranking de Aduanas</div><div class="ap-cfg-desc">Top 20 aduanas por recaudación con comparativo 2023–2024–2025</div></div>
+      <div class="tog-wrap"><div class="tog-track on" data-tog="sec-ranking" data-on="Visible" data-off="Oculto"><div class="tog-knob"></div></div><span class="tog-label">Visible</span></div>
+    </div>
+    <div class="ap-note">
+      <span class="badge">⚙️ Admin</span>
+      <div class="text">Los cambios de visibilidad son <strong>persistentes por sesión</strong> y se guardan en el navegador. Para configuraciones permanentes a nivel de plataforma, contacte al administrador del sistema ANAM. La gestión global de roles y perfiles se administra desde el panel de administración centralizado de la institución.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const G='#611232',V='#002F2A',A='#C8A977';
+Chart.defaults.font.family="'Montserrat',sans-serif";
+Chart.defaults.font.size=11;
+Chart.defaults.color='#666';
+
+const aduanas=[
+  {n:'Nuevo Laredo',   t:'F',r:'Norte',  v23:174790,v24:200016,v25:215227},
+  {n:'Manzanillo',     t:'M',r:'Sureste',v23:141246,v24:172450,v25:185634},
+  {n:'Veracruz',       t:'M',r:'Sureste',v23:134556,v24:137433,v25:140979},
+  {n:'Lázaro Cárdenas',t:'M',r:'Sureste',v23:92690, v24:120280,v25:137666},
+  {n:'Tuxpan',         t:'M',r:'Sureste',v23:69791, v24:38206, v25:94293},
+  {n:'Ciudad Juárez',  t:'F',r:'Norte',  v23:35268, v24:46021, v25:64214},
+  {n:'AIFA',           t:'I',r:'Centro', v23:15362, v24:46846, v25:62389},
+  {n:'Altamira',       t:'M',r:'Sureste',v23:46877, v24:44350, v25:47669},
+  {n:'AICM',           t:'I',r:'Centro', v23:56397, v24:36648, v25:41769},
+  {n:'Ensenada',       t:'M',r:'Norte',  v23:22191, v24:10273, v25:38610},
+  {n:'Mazatlán',       t:'M',r:'Sureste',v23:22418, v24:21670, v25:36003},
+  {n:'Puebla',         t:'I',r:'Centro', v23:27048, v24:31266, v25:34125},
+  {n:'Reynosa',        t:'F',r:'Norte',  v23:30496, v24:30050, v25:32382},
+  {n:'Colombia',       t:'F',r:'Norte',  v23:32036, v24:28733, v25:31239},
+  {n:'Toluca',         t:'I',r:'Centro', v23:26467, v24:26210, v25:30974},
+  {n:'Matamoros',      t:'F',r:'Norte',  v23:27304, v24:28353, v25:30001},
+  {n:'Tijuana',        t:'F',r:'Norte',  v23:16922, v24:20240, v25:23856},
+  {n:'Coatzacoalcos',  t:'M',r:'Sureste',v23:24619, v24:13022, v25:25639},
+  {n:'Guadalajara',    t:'I',r:'Centro', v23:15559, v24:15531, v25:16925},
+  {n:'Mexicali',       t:'F',r:'Norte',  v23:15614, v24:15263, v25:15827},
+];
+const tLabel={F:'Fronteriza',M:'Marítima',I:'Interior'};
+const tColor={F:G,M:V,I:A};
+
+let activePeriodo='2025*';
+let activeTipo='Todas';
+let activeRegion='Nacional';
+
+function getVKey(){return activePeriodo==='2024'?'v24':activePeriodo==='2023'?'v23':'v25';}
+function getPrevKey(){return activePeriodo==='2024'?'v23':activePeriodo==='2023'?null:'v24';}
+
+function getFiltered(){
+  let list=[...aduanas];
+  if(activeTipo!=='Todas'){const m={Fronteriza:'F',Marítima:'M',Interior:'I'};list=list.filter(a=>a.t===m[activeTipo]);}
+  if(activeRegion!=='Nacional') list=list.filter(a=>a.r===activeRegion);
+  return list;
+}
+
+function buildTable(){
+  const vKey=getVKey(),prevKey=getPrevKey();
+  const list=getFiltered().slice().sort((a,b)=>b[vKey]-a[vKey]);
+  const tbody=document.getElementById('rankingBody');
+  tbody.innerHTML='';
+  list.slice(0,20).forEach((a,i)=>{
+    const delta=prevKey&&a[prevKey]?+((a[vKey]-a[prevKey])/a[prevKey]*100).toFixed(1):null;
+    const cls=delta===null?'':delta>=0?'delta-up':'delta-down';
+    const dTxt=delta===null?'—':`${delta>=0?'+':''}${delta}%`;
+    tbody.innerHTML+=`<tr>
+      <td style="text-align:center;"><span class="rank-num${i<3?' top':''}">${i+1}</span></td>
+      <td style="font-weight:${i<3?700:500};">${a.n}</td>
+      <td><span class="type-badge ${a.t}">${tLabel[a.t]}</span></td>
+      <td>$${a.v23.toLocaleString()}</td>
+      <td>$${a.v24.toLocaleString()}</td>
+      <td style="font-weight:700;">$${a.v25.toLocaleString()}</td>
+      <td class="${cls}">${dTxt}</td>
+    </tr>`;
+  });
+}
+
+function updateKPIs(){
+  const vKey=getVKey(),prevKey=getPrevKey();
+  const list=getFiltered().slice().sort((a,b)=>b[vKey]-a[vKey]);
+  const top=list[0];
+  if(!top)return;
+  const kpis=document.querySelectorAll('.kpi-s');
+  kpis[0].querySelector('.val').textContent=top.n;
+  kpis[0].querySelector('.sub').textContent=`$${top[vKey].toLocaleString()} M`;
+  if(prevKey){
+    const withG=list.filter(a=>a[prevKey]>0).map(a=>({...a,g:+((a[vKey]-a[prevKey])/a[prevKey]*100).toFixed(1)}));
+    withG.sort((a,b)=>b.g-a.g);
+    const ldr=withG[0];
+    if(ldr&&kpis[1]){kpis[1].querySelector('.val').textContent=`${ldr.n} +${ldr.g}%`;kpis[1].querySelector('.sub').textContent=`$${(ldr[prevKey]/1000).toFixed(0)}K M → $${(ldr[vKey]/1000).toFixed(0)}K M`;}
+  }
+}
+
+const chartTipoDonut=new Chart(document.getElementById('chartTipoDonut'),{
+  type:'doughnut',
+  data:{labels:['Fronterizas','Marítimas','Interiores'],datasets:[{data:[457547,756580,235334],backgroundColor:[G,V,A],borderWidth:3,borderColor:'#fff',hoverOffset:6}]},
+  options:{responsive:true,maintainAspectRatio:false,cutout:'67%',plugins:{legend:{display:false},tooltip:{callbacks:{label:d=>`${d.label}: $${d.raw.toLocaleString()} M`}}}}
+});
+
+const TIPO_PCOL={F:'#611232',M:'#002F2A',I:'#5C6B3A'};
+const TIPO_ICO={F:'🏛',M:'🚢',I:'✈️'};
+const TIPO_NM={F:'Fronterizas',M:'Marítimas',I:'Interiores'};
+
+function updateDonut(){
+  const vKey=getVKey();
+  const list=getFiltered();
+  const fv=list.filter(a=>a.t==='F').reduce((s,a)=>s+a[vKey],0);
+  const mv=list.filter(a=>a.t==='M').reduce((s,a)=>s+a[vKey],0);
+  const iv=list.filter(a=>a.t==='I').reduce((s,a)=>s+a[vKey],0);
+  const tot=fv+mv+iv||1;
+
+  chartTipoDonut.data.datasets[0].data=[fv,mv,iv];
+  chartTipoDonut.update();
+
+  document.getElementById('tipoTotalVal').textContent=`$${(tot/1000).toFixed(0)}K`;
+  document.getElementById('tipoCardSub').textContent=`${activePeriodo} · Total: $${tot.toLocaleString()} M`;
+
+  const tipoRows=[{t:'F',v:fv},{t:'M',v:mv},{t:'I',v:iv}]
+    .filter(d=>d.v>0).sort((a,b)=>b.v-a.v);
+
+  // Mini stats beside donut
+  const ms=document.getElementById('tipoMiniStats');
+  ms.innerHTML='';
+  tipoRows.forEach(d=>{
+    const pct=+(d.v/tot*100).toFixed(1);
+    ms.innerHTML+=`<div style="display:flex;align-items:center;gap:8px;">
+      <div style="width:9px;height:9px;border-radius:2px;background:${TIPO_PCOL[d.t]};flex-shrink:0;"></div>
+      <div style="flex:1;font-size:11px;font-weight:600;">${TIPO_NM[d.t]}</div>
+      <div style="text-align:right;"><div style="font-size:11px;font-weight:700;">$${(d.v/1000).toFixed(0)}K M</div><div style="font-size:10px;color:#aaa;">${pct}%</div></div>
+    </div>`;
+  });
+
+  // Colored panels filling remaining height
+  const panels=document.getElementById('tipoPanels');
+  panels.innerHTML='';
+  tipoRows.forEach((d,idx)=>{
+    const pct=+(d.v/tot*100).toFixed(1);
+    const topA=list.filter(a=>a.t===d.t).sort((a,b)=>b[vKey]-a[vKey])[0];
+    const leader=topA?topA.n:'—';
+    const nCount=list.filter(a=>a.t===d.t).length;
+    panels.innerHTML+=`<div style="flex:1;padding:12px 20px;background:${TIPO_PCOL[d.t]};color:#fff;position:relative;overflow:hidden;${idx>0?'border-top:1px solid rgba(255,255,255,.12);':''}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+        <div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;opacity:.65;text-transform:uppercase;margin-bottom:3px;">${TIPO_ICO[d.t]}&nbsp;${TIPO_NM[d.t]}</div>
+          <div style="font-size:20px;font-weight:800;letter-spacing:-0.5px;line-height:1;">$${d.v.toLocaleString()} M</div>
+          <div style="font-size:9px;opacity:.55;margin-top:3px;">${nCount} aduanas · Líder: ${leader}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:28px;font-weight:800;line-height:1;opacity:.95;">${pct}%</div>
+          <div style="font-size:9px;opacity:.5;">del total</div>
+        </div>
+      </div>
+      <div style="height:3px;background:rgba(255,255,255,.15);border-radius:2px;margin-top:8px;">
+        <div style="height:100%;width:${Math.min(pct,100)}%;background:rgba(255,255,255,.55);border-radius:2px;transition:width .5s ease;"></div>
+      </div>
+    </div>`;
+  });
+}
+
+const chartComparativo=new Chart(document.getElementById('chartComparativo'),{
+  type:'bar',
+  data:{
+    labels:aduanas.slice(0,10).map(a=>a.n.split(' ').slice(0,2).join(' ')),
+    datasets:[
+      {label:'2023',data:aduanas.slice(0,10).map(a=>a.v23),backgroundColor:'rgba(0,47,42,.3)',borderRadius:2},
+      {label:'2024',data:aduanas.slice(0,10).map(a=>a.v24),backgroundColor:'rgba(0,47,42,.55)',borderRadius:2},
+      {label:'2025*',data:aduanas.slice(0,10).map(a=>a.v25),backgroundColor:'rgba(97,18,50,.75)',borderRadius:4},
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12}},tooltip:{callbacks:{label:d=>`${d.dataset.label}: $${d.raw.toLocaleString()} M`}}},
+    scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{callback:v=>`$${(v/1000).toFixed(0)}K`}}}}
+});
+
+function updateComparativo(){
+  const vKey=getVKey();
+  const list=getFiltered().slice().sort((a,b)=>b[vKey]-a[vKey]).slice(0,10);
+  chartComparativo.data.labels=list.map(a=>a.n.split(' ').slice(0,2).join(' '));
+  chartComparativo.data.datasets[0].data=list.map(a=>a.v23);
+  chartComparativo.data.datasets[1].data=list.map(a=>a.v24);
+  chartComparativo.data.datasets[2].data=list.map(a=>a.v25);
+  chartComparativo.update();
+}
+
+const deltas0=aduanas.slice(0,15).map(a=>+((a.v25-a.v24)/a.v24*100).toFixed(1));
+const chartDelta=new Chart(document.getElementById('chartDelta'),{
+  type:'bar',
+  data:{
+    labels:aduanas.slice(0,15).map(a=>a.n.split(' ')[0]),
+    datasets:[{data:deltas0,backgroundColor:deltas0.map(d=>d<0?'rgba(220,53,69,.7)':'rgba(0,47,42,.65)'),borderRadius:3}]
+  },
+  options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:d=>`${d.raw>0?'+':''}${d.raw}%`}}},
+    scales:{x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{callback:v=>`${v}%`}},y:{grid:{display:false},ticks:{font:{size:9}}}}}
+});
+
+function updateDelta(){
+  const vKey=getVKey(),prevKey=getPrevKey();
+  if(!prevKey) return;
+  const list=getFiltered().filter(a=>a[prevKey]>0).sort((a,b)=>b[vKey]-a[vKey]).slice(0,15);
+  const deltas=list.map(a=>+((a[vKey]-a[prevKey])/a[prevKey]*100).toFixed(1));
+  chartDelta.data.labels=list.map(a=>a.n.split(' ')[0]);
+  chartDelta.data.datasets[0].data=deltas;
+  chartDelta.data.datasets[0].backgroundColor=deltas.map(d=>d<0?'rgba(220,53,69,.7)':'rgba(0,47,42,.65)');
+  chartDelta.update();
+}
+
+function updateAll(){
+  buildTable();
+  updateKPIs();
+  updateDonut();
+  updateComparativo();
+  updateDelta();
+  if(typeof updateMapMarkers==='function') updateMapMarkers();
+}
+
+buildTable();
+updateDonut();
+
+// ── Leaflet map ──────────────────────────────────────────────────────────────
+// Needs leaflet.js loaded (added via <script src> below)
+const aduanaCoords={
+  'Nuevo Laredo':   [27.4764,-99.5151],
+  'Manzanillo':     [19.0535,-104.3188],
+  'Veracruz':       [19.1699,-96.1331],
+  'Lázaro Cárdenas':[17.9583,-102.1671],
+  'Tuxpan':         [20.9536,-97.4000],
+  'Ciudad Juárez':  [31.6904,-106.4245],
+  'AIFA':           [19.7569,-99.0158],
+  'Altamira':       [22.4007,-97.9274],
+  'AICM':           [19.4360,-99.0719],
+  'Ensenada':       [31.8667,-116.6000],
+  'Mazatlán':       [23.2494,-106.4111],
+  'Puebla':         [19.0414,-98.2063],
+  'Reynosa':        [26.0756,-98.2936],
+  'Colombia':       [27.3167,-99.5500],
+  'Toluca':         [19.2826,-99.6557],
+  'Matamoros':      [25.8693,-97.5027],
+  'Tijuana':        [32.5149,-117.0382],
+  'Coatzacoalcos':  [18.1500,-94.4500],
+  'Guadalajara':    [20.6597,-103.3496],
+  'Mexicali':       [32.6245,-115.4523],
+};
+
+let mexMap=null,markerLayer=null;
+function initMap(){
+  if(!window.L||mexMap)return;
+  mexMap=L.map('mapaMexico',{scrollWheelZoom:true,zoomControl:true}).setView([23.8,-102.5],5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',
+    maxZoom:13,
+  }).addTo(mexMap);
+  markerLayer=L.layerGroup().addTo(mexMap);
+  updateMapMarkers();
+}
+
+function updateMapMarkers(){
+  if(!mexMap||!markerLayer)return;
+  markerLayer.clearLayers();
+  const vKey=getVKey();
+  const list=getFiltered();
+  const maxV=Math.max(...list.map(a=>a[vKey]),1);
+  list.forEach(a=>{
+    const coords=aduanaCoords[a.n];
+    if(!coords)return;
+    const r=Math.max(6,Math.round(7+(a[vKey]/maxV*24)));
+    const col={F:'#611232',M:'#002F2A',I:'#C8A977'}[a.t]||'#888';
+    const c=L.circleMarker(coords,{radius:r,fillColor:col,color:'white',weight:2,fillOpacity:0.85}).addTo(markerLayer);
+    c.bindTooltip(`<div style="font-family:Montserrat,sans-serif;font-size:11px;line-height:1.5;"><b>${a.n}</b><br><span style="color:#888;">${tLabel[a.t]}</span><br><b>$${a[vKey].toLocaleString()} M</b></div>`,{sticky:true,opacity:0.95});
+  });
+}
+
+// Load Leaflet JS dynamically then init map
+(function(){
+  const s=document.createElement('script');
+  s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+  s.onload=initMap;
+  document.head.appendChild(s);
+})();
+
+document.querySelectorAll('.filter-group').forEach(grp=>{
+  const lbl=grp.querySelector('.filter-label');
+  if(!lbl)return;
+  const label=lbl.textContent.trim();
+  grp.querySelectorAll('button.filter-chip').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      grp.querySelectorAll('button.filter-chip').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      if(label==='Periodo') activePeriodo=btn.textContent.trim();
+      updateAll();
+    });
+  });
+  const sel=grp.querySelector('select.filter-chip');
+  if(sel){
+    sel.addEventListener('change',()=>{
+      if(label==='Tipo') activeTipo=sel.value;
+      if(label==='Región') activeRegion=sel.value;
+      updateAll();
+    });
+  }
+});
+
+// ── Mobile Sidebar ──
+function toggleSidebar(){
+  const aside=document.querySelector('aside');
+  const overlay=document.getElementById('sidebarOverlay');
+  const open=aside.classList.toggle('mob-open');
+  overlay.classList.toggle('active',open);
+  document.body.style.overflow=open?'hidden':'';
+}
+document.querySelectorAll('nav a[href]').forEach(a=>{
+  a.addEventListener('click',()=>{if(window.innerWidth<=768)toggleSidebar();});
+});
+
+// ── Accesos Pane ──
+const AP_SECTIONS={pedimentos:'apPedimentos',comext:'apComext',config:'apConfig'};
+function showAccesos(section){
+  document.querySelector('main').style.display='none';
+  document.getElementById('accesosPane').classList.add('open');
+  Object.values(AP_SECTIONS).forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('vis');});
+  const el=document.getElementById(AP_SECTIONS[section]);
+  if(el)el.classList.add('vis');
+  const TITLES={pedimentos:'Pedimentos',comext:'Comercio Exterior',config:'Configuración'};
+  document.getElementById('apTitle').innerHTML='<span>'+(TITLES[section]||section)+'</span>';
+  document.querySelectorAll('nav a').forEach(a=>a.classList.remove('active'));
+  const navA=document.querySelector('nav a[data-accesos="'+section+'"]');
+  if(navA)navA.classList.add('active');
+  localStorage.setItem('anam_pane','accesos');
+  localStorage.setItem('anam_section',section);
+}
+function showMain(){
+  document.querySelector('main').style.display='';
+  document.getElementById('accesosPane').classList.remove('open');
+  document.querySelectorAll('nav a').forEach(a=>a.classList.remove('active'));
+  const fname=location.href.split('/').pop().split('?')[0];
+  document.querySelectorAll('nav a[href]').forEach(a=>{if(a.getAttribute('href')===fname)a.classList.add('active');});
+  localStorage.setItem('anam_pane','main');
+  if(typeof mexMap!=='undefined')setTimeout(()=>mexMap.invalidateSize(),150);
+}
+document.querySelectorAll('nav a[data-accesos]').forEach(a=>{
+  a.addEventListener('click',()=>showAccesos(a.dataset.accesos));
+});
+document.querySelectorAll('.tog-track').forEach(track=>{
+  const key=track.dataset.tog;
+  const onLbl=track.dataset.on||'Visible';
+  const offLbl=track.dataset.off||'Oculto';
+  const saved=key?localStorage.getItem('anam_tog_'+key):null;
+  if(saved!==null){
+    const on=saved==='1';
+    track.classList.toggle('on',on);
+    const lbl=track.nextElementSibling;
+    if(lbl)lbl.textContent=on?onLbl:offLbl;
+  }
+  track.addEventListener('click',()=>{
+    const on=track.classList.toggle('on');
+    const lbl=track.nextElementSibling;
+    if(lbl)lbl.textContent=on?onLbl:offLbl;
+    if(key)localStorage.setItem('anam_tog_'+key,on?'1':'0');
+  });
+});
+(function(){
+  const p=localStorage.getItem('anam_pane');
+  if(p==='accesos'){const s=localStorage.getItem('anam_section');if(s)showAccesos(s);}
+})();
+</script>
+</body>
+</html>

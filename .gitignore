@@ -1,0 +1,21 @@
+# Archivos temporales de Office
+~$*
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Scripts de procesamiento (no necesarios en producción)
+scripts/
+
+# Datos fuente (no necesarios en producción)
+Data/
+Documentos de referencia/
+Manuales/
+
+# Vercel local
+.vercel/
+
+# OS
+.DS_Store
+Thumbs.db
